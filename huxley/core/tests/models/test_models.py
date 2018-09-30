@@ -8,9 +8,9 @@ from django.core.exceptions import ValidationError
 from django.db import IntegrityError
 from django.test import TestCase
 
-from huxley.core.models import (Assignment, Committee, CommitteeFeedback,
-                                Conference, Country, CountryPreference,
-                                Delegate, PositionPaper, Rubric)
+from huxley.core.models import (
+    Assignment, Committee, CommitteeFeedback, Conference, Country,
+    CountryPreference, Delegate, PositionPaper, Rubric, SecretariatMember)
 
 from huxley.utils.test import models
 
@@ -88,7 +88,11 @@ class CommitteeFeedbackTest(TestCase):
             name='DISC', full_name='Disarmament and International Security')
         self.committee_feedback = CommitteeFeedback.objects.create(
             committee=self.committee,
-            comment='Jake Tibbetts was literally awful as a person')
+            comment='Jake Tibbetts was literally awful as a person',
+            rating=3,
+            chair_1_name='Jake Tibbetts',
+            chair_1_comment='He got mad at me for watching Pacific Rim the whole time',
+            chair_1_rating=1, )
 
     def test_default_fields(self):
         self.assertFalse(self.committee == None)
@@ -141,16 +145,16 @@ class AssignmentTest(TestCase):
         ]
 
         all_assignments = [
-            (cm1.id, ct1.id, r1.id, False, None),
-            (cm1.id, ct2.id, r1.id, False, None),
-            (cm1.id, ct3.id, r1.id, False, None),
-            (cm2.id, ct2.id, r2.id, False, None),
-            (cm2.id, ct3.id, r2.id, False, None),
-            (cm2.id, ct1.id, r1.id, False, None),
+            (cm1.id, ct1.id, r1.id, False),
+            (cm1.id, ct2.id, r1.id, False),
+            (cm1.id, ct3.id, r1.id, False),
+            (cm2.id, ct2.id, r2.id, False),
+            (cm2.id, ct3.id, r2.id, False),
+            (cm2.id, ct1.id, r1.id, False),
         ]
 
         Assignment.update_assignments(updates)
-        assignments = [a[1:] for a in Assignment.objects.all().values_list()]
+        assignments = [a[1:-1] for a in Assignment.objects.all().values_list()]
         delegates = Delegate.objects.all()
         self.assertEquals(set(all_assignments), set(assignments))
         self.assertEquals(len(delegates), 2)
@@ -339,3 +343,17 @@ class RubricTest(TestCase):
 
     def test_unicode(self):
         self.assertEquals(self.committee.name, self.rubric.__unicode__())
+
+
+class SecretariatMemberTest(TestCase):
+    def setUp(self):
+        self.committee = Committee.objects.create(
+            name='DISC', full_name='Disarmament and International Security')
+        self.member = SecretariatMember.objects.create(
+            name='Tibbalidoo', committee=self.committee)
+
+    def test_default_fields(self):
+        self.assertFalse(self.member.is_head_chair)
+
+    def test_unicode(self):
+        self.assertTrue(self.member.__unicode__() == 'Tibbalidoo')

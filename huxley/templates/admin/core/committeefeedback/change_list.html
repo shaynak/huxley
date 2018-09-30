@@ -13,24 +13,11 @@
           </a>
         </li>
         <li>
-          <a href="{% url cl.opts|admin_urlname:'roster' %}">
-            Download Roster
+          <a href="{% url cl.opts|admin_urlname:'list' %}">
+            Download Feedback
           </a>
         </li>
       {% endblock %}
     </ul>
   {% endif %}
-  {{ block.super }}
-  <form action="{% url cl.opts|admin_urlname:'load' %}" enctype="multipart/form-data" method="post">
-    {% csrf_token %}
-    Import Delegates
-    <input type="file" name="csv" />
-    <input type="submit" />
-  </form>
-  <form action="{% url cl.opts|admin_urlname:'confirm_waivers' %}" enctype="multipart/form-data" method="post">
-    {% csrf_token %}
-    Add Waiver Confirmations
-    <input type="file" name="csv" />
-    <input type="submit" />
-  </form>
 {% endblock %}

@@ -17,6 +17,9 @@ const User = require('utils/User');
 require('css/Table.less');
 const DelegateProfileViewText = require('text/DelegateProfileViewText.md');
 
+const DelegateChecklistPositionPaperText = require('text/checklists/DelegateChecklistPositionPaperText.md');
+const DelegateChecklistWaiverText = require('text/checklists/DelegateChecklistWaiverText.md');
+
 const DelegateProfileView = React.createClass({
   contextTypes: {
     conference: React.PropTypes.shape(ConferenceContext),
@@ -44,6 +47,7 @@ const DelegateProfileView = React.createClass({
     var committee = delegate && delegate.assignment.committee;
     var country = delegate && delegate.assignment.country;
     var school = delegate && delegate.school;
+    var summary = <div />;
     var text = <div />;
 
     if (assignment && school && committee && country) {
@@ -59,6 +63,63 @@ const DelegateProfileView = React.createClass({
       );
     }
 
+    var positionPaperCheck = '';
+    if (assignment && assignment.paper && assignment.paper.file) {
+      positionPaperCheck = '\u2611';
+    } else {
+      positionPaperCheck = '\u2610';
+    }
+
+    var waiverCheck = '';
+    if (delegate && delegate.waiver_submitted) {
+      waiverCheck = '\u2611';
+    } else {
+      waiverCheck = '\u2610';
+    }
+
+    var checklist = (
+      <table>
+        <thead>
+          <tr>
+            <th>Delegate Checklist</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>
+              {positionPaperCheck} <b>Turn in Position Paper</b>
+              <br />
+              <TextTemplate>{DelegateChecklistPositionPaperText}</TextTemplate>
+            </td>
+          </tr>
+          <tr>
+            <td>
+              {waiverCheck} <b>Turn in Waiver Form</b>
+              <br />
+              <TextTemplate>{DelegateChecklistWaiverText}</TextTemplate>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    );
+
+    if (delegate.published_summary) {
+      summary = (
+        <table>
+          <thead>
+            <tr>
+              <th>Feedback From Your Chairs:</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>{delegate.published_summary}</td>
+            </tr>
+          </tbody>
+        </table>
+      );
+    }
+
     return (
       <InnerView>
         <div style={{textAlign: 'center'}}>
@@ -67,37 +128,10 @@ const DelegateProfileView = React.createClass({
           <br />
         </div>
         {text}
-        <h4>Below is your attendance from conference.</h4>
-        <div className="table-container" style={{margin: '10px auto auto 0px'}}>
-          <table>
-            <thead>
-              <tr>
-                <th>Session</th>
-                <th>Friday Evening</th>
-                <th>Saturday Morning</th>
-                <th>Saturday Afternoon</th>
-                <th>Sunday Morning</th>
-              </tr>
-            </thead>
-            {this.state.delegate ? this.renderAttendanceRow() : <tbody />}
-          </table>
-        </div>
+        <br />
+        {checklist}
+        {summary}
       </InnerView>
-    );
-  },
-
-  renderAttendanceRow: function() {
-    var delegate = this.state.delegate;
-    return (
-      <tbody>
-        <tr>
-          <td>Attendance</td>
-          <td>{delegate.session_one ? 'Attended' : ''}</td>
-          <td>{delegate.session_two ? 'Attended' : ''}</td>
-          <td>{delegate.session_three ? 'Attended' : ''}</td>
-          <td>{delegate.session_four ? 'Attended' : ''}</td>
-        </tr>
-      </tbody>
     );
   },
 });

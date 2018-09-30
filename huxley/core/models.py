@@ -75,11 +75,16 @@ class Rubric(models.Model):
     # Values below this for the second paper topic
     topic_two = models.CharField(max_length=64, default='', blank=True)
     use_topic_2 = models.BooleanField(default=True)
-    grade_t2_category_1 = models.CharField(max_length=128, default='', blank=True)
-    grade_t2_category_2 = models.CharField(max_length=128, default='', blank=True)
-    grade_t2_category_3 = models.CharField(max_length=128, default='', blank=True)
-    grade_t2_category_4 = models.CharField(max_length=128, default='', blank=True)
-    grade_t2_category_5 = models.CharField(max_length=128, default='', blank=True)
+    grade_t2_category_1 = models.CharField(
+        max_length=128, default='', blank=True)
+    grade_t2_category_2 = models.CharField(
+        max_length=128, default='', blank=True)
+    grade_t2_category_3 = models.CharField(
+        max_length=128, default='', blank=True)
+    grade_t2_category_4 = models.CharField(
+        max_length=128, default='', blank=True)
+    grade_t2_category_5 = models.CharField(
+        max_length=128, default='', blank=True)
 
     grade_t2_value_1 = models.PositiveSmallIntegerField(default=10)
     grade_t2_value_2 = models.PositiveSmallIntegerField(default=10)
@@ -116,8 +121,64 @@ class Committee(models.Model):
 
 
 class CommitteeFeedback(models.Model):
+    CHOICES = ((0, 0),
+               (1, 1),
+               (2, 2),
+               (3, 3),
+               (4, 4),
+               (5, 5),
+               (6, 6),
+               (7, 7),
+               (8, 8),
+               (9, 9),
+               (10, 10), )
+
     committee = models.ForeignKey(Committee)
-    comment = models.TextField(default='')
+    comment = models.TextField(blank=True, default='')
+    rating = models.IntegerField(blank=True, default=0, choices=CHOICES)
+
+    chair_1_name = models.CharField(blank=True, default='', max_length=100)
+    chair_2_name = models.CharField(blank=True, default='', max_length=100)
+    chair_3_name = models.CharField(blank=True, default='', max_length=100)
+    chair_4_name = models.CharField(blank=True, default='', max_length=100)
+    chair_5_name = models.CharField(blank=True, default='', max_length=100)
+    chair_6_name = models.CharField(blank=True, default='', max_length=100)
+    chair_7_name = models.CharField(blank=True, default='', max_length=100)
+    chair_8_name = models.CharField(blank=True, default='', max_length=100)
+    chair_9_name = models.CharField(blank=True, default='', max_length=100)
+    chair_10_name = models.CharField(blank=True, default='', max_length=100)
+
+    chair_1_comment = models.TextField(blank=True, default='')
+    chair_2_comment = models.TextField(blank=True, default='')
+    chair_3_comment = models.TextField(blank=True, default='')
+    chair_4_comment = models.TextField(blank=True, default='')
+    chair_5_comment = models.TextField(blank=True, default='')
+    chair_6_comment = models.TextField(blank=True, default='')
+    chair_7_comment = models.TextField(blank=True, default='')
+    chair_8_comment = models.TextField(blank=True, default='')
+    chair_9_comment = models.TextField(blank=True, default='')
+    chair_10_comment = models.TextField(blank=True, default='')
+
+    chair_1_rating = models.IntegerField(
+        blank=True, default=0, choices=CHOICES)
+    chair_2_rating = models.IntegerField(
+        blank=True, default=0, choices=CHOICES)
+    chair_3_rating = models.IntegerField(
+        blank=True, default=0, choices=CHOICES)
+    chair_4_rating = models.IntegerField(
+        blank=True, default=0, choices=CHOICES)
+    chair_5_rating = models.IntegerField(
+        blank=True, default=0, choices=CHOICES)
+    chair_6_rating = models.IntegerField(
+        blank=True, default=0, choices=CHOICES)
+    chair_7_rating = models.IntegerField(
+        blank=True, default=0, choices=CHOICES)
+    chair_8_rating = models.IntegerField(
+        blank=True, default=0, choices=CHOICES)
+    chair_9_rating = models.IntegerField(
+        blank=True, default=0, choices=CHOICES)
+    chair_10_rating = models.IntegerField(
+        blank=True, default=0, choices=CHOICES)
 
     def __unicode__(self):
         return str(self.committee.name) + " - Comment " + str(self.id)
@@ -276,7 +337,7 @@ class Registration(models.Model):
                     'If you have any questions, please contact info@bmun.org.\n\n'
                     'Thank you for registering for BMUN, and we look forward to '
                     'seeing you at the oldest high school conference in the world '
-                    'on March 2-4, 2018.' %
+                    'on March 1-3, 2019.' %
                     (conference.session, int(registration_fee),
                      int(delegate_fee)),
                     'no-reply@bmun.org', [registration.school.primary_email],
@@ -411,11 +472,12 @@ class Assignment(models.Model):
         assigned = set()
         failed_assignments = []
 
-        def add(committee, country, registration, rejected):
+        def add(committee, country, registration, paper, rejected):
             additions.append(
                 cls(committee_id=committee.id,
                     country_id=country.id,
                     registration_id=registration.id,
+                    paper_id=paper.id,
                     rejected=rejected, ))
 
         def remove(assignment_data):
@@ -460,16 +522,18 @@ class Assignment(models.Model):
 
             assigned.add(key)
             old_assignment = assignment_dict.get(key)
+            paper = PositionPaper.objects.create()
+            paper.save()
 
             if not old_assignment:
-                add(committee, country, registration, rejected)
+                add(committee, country, registration, paper, rejected)
                 continue
 
             if old_assignment['registration_id'] != registration:
                 # Remove the old assignment instead of just updating it
                 # so that its delegates are deleted by cascade.
                 remove(old_assignment)
-                add(committee, country, registration, rejected)
+                add(committee, country, registration, paper, rejected)
 
         if not failed_assignments:
             with transaction.atomic():
@@ -549,6 +613,7 @@ class Delegate(models.Model):
     session_four = models.BooleanField(default=False)
 
     committee_feedback_submitted = models.BooleanField(default=False)
+    waiver_submitted = models.BooleanField(default=False)
 
     def __unicode__(self):
         return self.name
@@ -578,3 +643,14 @@ class Delegate(models.Model):
     class Meta:
         db_table = u'delegate'
         ordering = ['school']
+
+
+class SecretariatMember(models.Model):
+    # A lot more could be added here but this is a good start
+
+    name = models.CharField(blank=False, default='', max_length=100)
+    committee = models.ForeignKey(Committee)
+    is_head_chair = models.BooleanField(default=False)
+
+    def __unicode__(self):
+        return self.name

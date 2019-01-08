@@ -10,6 +10,7 @@ var React = require('react');
 var ReactRouter = require('react-router');
 
 var _accessSafe = require('utils/_accessSafe');
+var AssignmentStore = require('stores/AssignmentStore');
 var Button = require('components/core/Button');
 var CurrentUserStore = require('stores/CurrentUserStore');
 var DelegateActions = require('actions/DelegateActions');
@@ -43,6 +44,9 @@ var AdvisorRosterView = React.createClass({
     return {
       delegates: DelegateStore.getSchoolDelegates(schoolID),
       registration: RegistrationStore.getRegistration(schoolID, conferenceID),
+      assignments: AssignmentStore.getSchoolAssignments(schoolID).filter(
+        assignment => !assignment.rejected,
+      ),
       loading: false,
       modal_open: false,
       modal_name: '',
@@ -172,6 +176,7 @@ var AdvisorRosterView = React.createClass({
   renderRosterRows: function() {
     var committees = this.state.committees;
     var countries = this.state.countries;
+    var assignments = this.state.assignments;
     var disableEdit = _checkDate();
 
     return this.state.delegates.map(

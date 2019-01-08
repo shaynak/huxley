@@ -29,6 +29,7 @@ class Conference(models.Model):
     max_attendance = models.PositiveSmallIntegerField(default=0)
     open_reg = models.BooleanField(default=True)
     waitlist_reg = models.BooleanField(default=False)
+    position_papers_accepted = models.BooleanField(default=False)
     external = models.CharField(max_length=128)
     registration_fee = models.DecimalField(
         max_digits=6, decimal_places=2, default=Decimal('50.00'))
@@ -469,7 +470,7 @@ class Assignment(models.Model):
                            for a in assignments}
         additions = []
         deletions = []
-        assigned = set()
+        assigned = dict()
         failed_assignments = []
 
         def add(committee, country, registration, paper, rejected):
@@ -510,9 +511,11 @@ class Assignment(models.Model):
                 continue
 
             key = (committee.id, country.id)
-            if key in assigned:
+            if key in assigned.keys():
                 # Make sure that the same committee/country pair is not being
                 # given to more than one school in the upload
+                if assigned[key] == school.id:
+                    continue
                 committee = str(committee.name)
                 country = str(country.name)
                 failed_assignments.append(
@@ -520,7 +523,7 @@ class Assignment(models.Model):
                     ' - ASSIGNED TO MORE THAN ONE SCHOOL')
                 continue
 
-            assigned.add(key)
+            assigned[key] = school.id
             old_assignment = assignment_dict.get(key)
             paper = PositionPaper.objects.create()
             paper.save()

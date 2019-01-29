@@ -41,12 +41,22 @@ var AdvisorRosterView = React.createClass({
   getInitialState: function() {
     var schoolID = CurrentUserStore.getCurrentUser().school.id;
     var conferenceID = this.context.conference.session;
+    var assignments = AssignmentStore.getSchoolAssignments(schoolID).filter(
+      assignment => !assignment.rejected,
+    );
+
+    var assignment_ids = {};
+    assignments.map(
+      function(a) {
+        assignment_ids[a.id] = a;
+      }.bind(this),
+    );
+
     return {
       delegates: DelegateStore.getSchoolDelegates(schoolID),
       registration: RegistrationStore.getRegistration(schoolID, conferenceID),
-      assignments: AssignmentStore.getSchoolAssignments(schoolID).filter(
-        assignment => !assignment.rejected,
-      ),
+      assignments: assignments,
+      assignment_ids: assignment_ids,
       loading: false,
       modal_open: false,
       modal_name: '',
@@ -76,11 +86,27 @@ var AdvisorRosterView = React.createClass({
         loading: false,
       });
     });
+    this._assignmentsToken = AssignmentStore.addListener(() => {
+      var assignments = AssignmentStore.getSchoolAssignments(schoolID).filter(
+        assignment => !assignment.rejected,
+      );
+      var assignment_ids = {};
+      assignments.map(
+        function(a) {
+          assignment_ids[a.id] = a;
+        }.bind(this),
+      );
+      this.setState({
+        assignments: assignments,
+        assignment_ids: assignment_ids,
+      });
+    });
   },
 
   componentWillUnmount: function() {
     this._registrationToken && this._registrationToken.remove();
     this._delegatesToken && this._delegatesToken.remove();
+    this._assignmentsToken && this._assignmentsToken.remove();
   },
 
   render: function() {
@@ -172,13 +198,12 @@ var AdvisorRosterView = React.createClass({
       );
     }
   },
-
   renderRosterRows: function() {
     var committees = this.state.committees;
     var countries = this.state.countries;
     var assignments = this.state.assignments;
+    var assignment_ids = this.state.assignment_ids;
     var disableEdit = _checkDate();
-
     return this.state.delegates.map(
       function(delegate) {
         var editButton = disableEdit ? (
@@ -198,7 +223,6 @@ var AdvisorRosterView = React.createClass({
             </Button>
           </td>
         );
-
         var deleteButton = disableEdit ? (
           <td />
         ) : (
@@ -211,21 +235,15 @@ var AdvisorRosterView = React.createClass({
             </Button>
           </td>
         );
-
-
         const waiverCheck =
           delegate && delegate.waiver_submitted ? '\u2611' : '\u2610';
-
         const positionPaperCheck =
           delegate.assignment &&
-          assignments[delegate.assignment - 1].paper &&
-          assignments[delegate.assignment - 1].paper.file
+          assignment_ids[delegate.assignment] &&
+          assignment_ids[delegate.assignment].paper &&
+          assignment_ids[delegate.assignment].paper.file
             ? '\u2611'
             : '\u2610';
-
-
-
-
         return (
           <tr>
             <td>{delegate.name}</td>
@@ -254,7 +272,6 @@ var AdvisorRosterView = React.createClass({
       }.bind(this),
     );
   },
-
   openModal: function(name, email, fn, event) {
     this.setState({
       modal_open: true,
@@ -265,22 +282,18 @@ var AdvisorRosterView = React.createClass({
     });
     event.preventDefault();
   },
-
   closeModal: function(event) {
     this.setState({modal_open: false});
     event.preventDefault();
   },
-
   renderError: function(field) {
     if (this.state.errors[field]) {
       return (
         <StatusLabel status="error">{this.state.errors[field]}</StatusLabel>
       );
     }
-
     return null;
   },
-
   _handleDeleteDelegate: function(delegate) {
     const confirmed = window.confirm(
       `Are you sure you want to delete this delegate (${delegate.name})?`,
@@ -289,7 +302,6 @@ var AdvisorRosterView = React.createClass({
       DelegateActions.deleteDelegate(delegate.id, this._handleDeleteError);
     }
   },
-
   _handleAddDelegate: function(data) {
     this.setState({loading: true});
     var user = CurrentUserStore.getCurrentUser();
@@ -300,7 +312,6 @@ var AdvisorRosterView = React.createClass({
     ).then(this._handleAddDelegateSuccess, this._handleError);
     event.preventDefault();
   },
-
   _handleEditDelegate: function(delegate) {
     var user = CurrentUserStore.getCurrentUser();
     this.setState({loading: true});
@@ -308,14 +319,12 @@ var AdvisorRosterView = React.createClass({
     DelegateActions.updateDelegate(delegate.id, delta, this._handleError);
     event.preventDefault();
   },
-
   _handleDelegatePasswordChange: function(delegate) {
     ServerAPI.resetDelegatePassword(delegate.id).then(
       this._handlePasswordChangeSuccess,
       this._handlePasswordChangeError,
     );
   },
-
   _handleAddDelegateSuccess: function(response) {
     DelegateActions.addDelegate(response);
     this.setState({
@@ -323,7 +332,6 @@ var AdvisorRosterView = React.createClass({
       modal_open: false,
     });
   },
-
   _handlePasswordChangeSuccess: function(response) {
     this.setState({
       loading: false,
@@ -331,17 +339,14 @@ var AdvisorRosterView = React.createClass({
     });
     window.alert(`Password successfully reset.`);
   },
-
   _handlePasswordChangeError: function(response) {
     window.alert(`The passowrd could not be reset.`);
   },
-
   _handleDeleteError: function(response) {
     window.alert(
       `There was an issue processing your request. Please refresh you page and try again.`,
     );
   },
-
   _handleError: function(response) {
     this.setState({
       errors: response,
@@ -350,5 +355,4 @@ var AdvisorRosterView = React.createClass({
     });
   },
 });
-
 module.exports = AdvisorRosterView;
